@@ -66,8 +66,6 @@ def edtEfficace(LE,LF):
         try:
             res = min(LFC, key= lambda x: etu.distance(x))
         except IndexError as exc:
-#            raise UnboundLocalError(exc.args)
-#            print('trouvé une erreur avec ', etu,LFC,exc.args )
             return edt, np.Inf
         d += etu.distance(res)
         edt[etu] = res

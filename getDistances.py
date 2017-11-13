@@ -19,4 +19,4 @@ def distanceAdresse(ori, dest):
         raise AttributeError('probleme calcul de distance entre %s et %s'%(ori,dest)+
                              " result = " + str(result))
 
-#print(distanceAdresse("Zermatt+suisse",'Vissoie+suisse'))
+

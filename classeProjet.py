@@ -1,10 +1,10 @@
 from emploiDuTemps import edtVF, attributionNormale, emploiDuTemps, separerTC
 from emploiDuTemps import np as np
 from emploiDuTemps import random as rd
-from creerBinome import greedyBinome, _greedyBinomeR
+from creerBinome import _greedyBinomeR
 from getDistances import distanceAdresse
 import unidecode
-#from recupererDonnee import _formater
+
 
 
 def formater(s):
@@ -27,8 +27,6 @@ class Personne:
     
     def distance(self,other):
         """ calcul la distance entre deux personnes"""
-#        return np.linalg.norm(np.array(self.adresse)-np.array(other.adresse))*(99*(self.typeClasse!= other.typeClasse)+1)
-        
         try:
             return self.getDistance[other.adresse]
         except KeyError:
@@ -52,10 +50,8 @@ class Personne:
     
     def __str__(self):
         return self.name
-#        return str(self.name)  + ' adresse ' + str(self.adresse) + ' ' + str(self.typeClasse)
     
     def __repr__(self):
-#        return str(self.name)   + ' adresse ' + str(self.adresse) + ' ' + str(self.typeClasse)
         return self.name 
     def __eq__(self,other):
         return ((self.name == other.name) and (self.adresse == other.adresse))
@@ -84,7 +80,6 @@ class Etudiant(Personne):
         return self.numStage
     
     def addBinome(self,etudiant):
-#        assert etudiant not in self.binome
         try:
             self.binome.extend(etudiant)
             self.binome = list(set(self.binome))
@@ -279,17 +274,6 @@ class Stages:
                 self.attribution[numStage], self.distanceOpti= edtVF(LE,LF,nbIter)
                 print("probleme possible d'équilibre")
         else:
-            """
-            enelver la double opti?
-            if self.version == 0:
-                 choisir la bonne version de greedyBinome
-                print("version double opti")
-                LE = greedyBinome(LE,nbIter)[0]
-                LE = creerDoubleEtudiant(LE)
-                self.attribution = edtVF(LE,LF,nbIter)
-                self.attribution, self.distanceOpti = attributionNormale(self.attribution)
-                 trouver qqch de mieux...
-                 """
             if self.version == 0:
                 if len(LEelem) <= len(LFelem)*2 and len(LEmoyen) <= len(LFmoyen)*2:
                     print("version opti avec elem d'un coté et de l'autre moyen")

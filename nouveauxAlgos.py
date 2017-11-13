@@ -16,9 +16,6 @@ def diviser(L,d):
     rd.shuffle(L2)
     return L1, L2
 
-#n = 10
-#print(diviser(list(range(n)),(n+1)//2))
-
 def _autreVersionR(LE, LF):
     LE1, LE2= diviser(LE,(len(LE)+1)//2)
     edt, d = emploiDuTemps(LE1,LF)

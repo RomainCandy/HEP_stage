@@ -5,6 +5,7 @@ Created on Thu Aug 24 22:41:13 2017
 
 
 reflechir à un moyen de ne pas retrier tout le temps les listes...
+voir comment faire marcher tout ça sur mac
 @author: romain
 """
 
@@ -19,7 +20,6 @@ import shelve
 from time import asctime
 from functools import reduce
 from recupererDonnee import makeStage, makeListeEtudiant,PasAuNormeEtu,PasAuNormeForm,makeListeFormateur
-from copy import deepcopy
 from urllib.request import URLError
 
 if sys.platform.startswith('linux'):
@@ -29,7 +29,7 @@ elif sys.platform.startswith('darwin'):
     extension = '*.bd'
 
 else:
-    raise ValueError('pas linux ou mac????')
+    extension = "*.bak"
 
 class Application(tk.Frame):
     def __init__(self,root,file=''):
@@ -40,11 +40,11 @@ class Application(tk.Frame):
         self.hasSaved = True
         self.toutLesStages = cP.Stages()
         self.make_gui()
-#        self.recupereDonnee()
+
         
     def make_gui(self):
         self.master.title('Projet tifemme' + self.file)
-#        self.master.resizable(False, False)
+
 
         self.width = 40
         self.height = 6
@@ -169,7 +169,7 @@ class Application(tk.Frame):
         self.filesTxt = [file for file in files if ".txt" in file or ".xlsx" in file ]
         for file in self.filesTxt:
             self.gen.genbListe.insert(tk.END,file)
-#            self.updateAffichage()
+
     
     def choixFile(self,event = None):
         index = self.gen.genbListe.curselection()
@@ -284,10 +284,7 @@ class Application(tk.Frame):
                                defaultextension="")
         self.file = result[:-(len(extension)-1)]
         if self.file:
-#            self.file = 'base_de_donnee'
             db = shelve.open(self.file)
-#            LE = [etu for etu in self.tempTout.lEtudiants if etu.numStage in list(range(7))]
-#            LF = [form for form in self.tempTout.lFormateurs if form.numStage in list(range(7))]
             self.tempTout.garderPersonnes()
             self.toutLesStages = self.tempTout
             print(self.tempTout)
@@ -499,7 +496,6 @@ class FenetreStage(tk.Toplevel):
             self.changement = False
             self.root.tempTout =self.stage
             for x in self.LE:
-#                print(x,"distance",len(x.getDistance))
                 pass
         except UnboundLocalError as exc:
             showerror(title= 'aucune attribution trouvée',message= "aucune attribution trouvée, vérifier peut-être les données rentrées ou changer de version"+
@@ -529,7 +525,6 @@ class FenetreStage(tk.Toplevel):
         if self.LF:
             for form in sorted(self.LF, key=lambda x:str(x)):
                 self.bListeF.insert(tk.END, form)
-#        self.root.tempTout.update({self.numeroStage:self.stage})
         self.bListeA.delete(0, tk.END)
         
         try:
@@ -646,25 +641,9 @@ class InfoPersonne(tk.Toplevel):
         self.destroy()
     
     def changerAnnee(self,typePersonne, fun):
-        """
-        nS = self.root.numeroStage
-        x = self.personne
-        if typePersonne == 'etudiant':    
-            self.root.tempTout[nS].supprEtudiant(x)
-            try:
-                self.root.root.tempTout[fun(nS)].ajoutEtudiant(x)
-            except KeyError:
-                self.root.root.tempTout[fun(nS)] = cP.Stages(nS+1, [x])
-        elif typePersonne == 'formateur':
-            self.root.tempTout[nS].supprFormateur(x)
-            try:
-                self.root.root.tempTout[fun(nS)].ajoutFormateur(x)
-            except KeyError:
-                self.root.root.tempTout[fun(nS)] = cP.Stages(nS+1,lFormateurs= [x])
-        self.updateVu()
-        """
+
         self.personne.numStage = fun(self.personne.numStage)
-#        self.updateVu()
+
         
     def modification(self, i,j=0):
         if i == 0:
@@ -760,7 +739,6 @@ class InfoPersonne(tk.Toplevel):
         self.personne.getDistance = dict()
     
     def validerSaisie(self,event=None):
-#        self.save()
         self.root.updateAffichage()
         self.destroy()
     
@@ -774,12 +752,11 @@ class InfoPersonne(tk.Toplevel):
         x = self.gen.entreeGen.get()
         x = x.strip()
         try:
-#            x = _formater(x)
             self.personne.changerAdresse(x)
             self.gen.destroy()
             self.updateVu()
         except ValueError:
-            showerror(message="l'adresse doit avoir la forme (x y) où x y sont des nombres")
+            showerror(message="pas d'erreurs possibles normalement")
         
     
     
@@ -789,22 +766,7 @@ class InfoPersonne(tk.Toplevel):
         tempV = self.typePersonne
         self.destroy()
         self.__init__(tempR, tempP,self.numStage, tempV)
-#        (self,root, personne,numStage, typePersonne = 'etudiant'):
-"""
-    def save(self):
-        db = shelve.open('temp' + reduce(lambda x,y:x+y, asctime().split(' ')[1:3]))
-        print('save smth')
-        try:
-#            currentStages = db['ToutLesStages']
-#            currentStages.update({self.root.numeroStage:self.root.stage})
-#            db['ToutLesStages'] = currentStages
-#            self.root.tempTout.update(currentStages)
-            db['ToutLesStages'].update({self.root.numeroStage:self.root.stage})
-        except KeyError:
-            db['ToutLesStages']={self.root.numeroStage:self.root.stage}
-            self.root.tempTout.update({self.root.numeroStage:self.root.stage})
-        db.close()
-   """     
+    
 class GeneriqueTopLevelSimple(tk.Toplevel):
     def __init__(self, root, champ= []):
         tk.Toplevel.__init__(self)
@@ -880,7 +842,6 @@ class Saisie(tk.Toplevel):
             nom = nom.strip()
             adresse = adresse.strip()
             try:
-#                adresse = _formater(adresse)
                 ok = True
             except ValueError:
                     showerror(message="l'adresse à la forme x y où x y sont des nombres")
@@ -895,51 +856,6 @@ class Saisie(tk.Toplevel):
                 self.root.ajouterFormateur(nouveauFormateur)
             self.destroy()
  
-""" inutile?
-class choixLE_LF(tk.Toplevel):
-    
-    def __init__(self,root):
-        tk.Toplevel.__init__(self)
-        self.root = root
-        tk.Label(self, text='nom du fichier liste etudiants').grid(row = 0, column = 0)
-        self.fichierE= tk.Entry(self)
-        self.fichierE.grid(row=0, column=2)
-        tk.Label(self, text='nom du fichier liste formateurs').grid(row= 1, column= 0)
-        self.fichierF = tk.Entry(self)
-        self.fichierF.grid(row = 1, column = 2)
-        self.buttonValide = tk.Button(self, text= "valider", command= self.creerDonnees)
-        self.buttonValide.grid(row=2,column = 1)
-        self.bind("<Return>",lambda event: self.creerDonnees(event))
-    
-    def creerDonnees(self,event = None):
-        fichierE = self.fichierE.get()
-        fichierF = self.fichierF.get()
-        if not(fichierE and fichierF):
-            showerror(title="Incomplet", message="Il manque une donnée")
-        else:
-            try:
-                stageTemp = makeStage(fichierE,fichierF)
-            except ListeEtuError:
-                showerror(title="fichier inconnue",message= str(ListeEtuError(fichierE)))
-            except ListeFormError:
-                showerror(title="fichier inconnue",message= str(ListeFormError(fichierF)))
-            except PasAuNormeEtu:
-                showerror(title="fichier pas aux normes",message= str(PasAuNormeEtu(fichierE)))
-            except PasAuNormeForm:
-                showerror(title="fichier pas aux normes",message= str(PasAuNormeForm(fichierF)))
-            else:
-                result= tkf.asksaveasfilename(title="Sauver la nouvelle base de donnée:",
-                                      filetypes=(("", extension),
-                                        ("Tout fichier", "")),
-                               initialfile="Nom par défaut",
-                               defaultextension="")
-                name=result[:-(len(extension)-1)]
-                db = shelve.open(name)
-                db['ToutLesStages']=stageTemp
-                self.root.file = name
-                self.root.recupereDonnee()
-                self.destroy()
-            """
     
     
 def start():          

@@ -64,13 +64,7 @@ def _formater(s):
     res = res.replace(' ','+')
     return res
         
-"""
-def formaterAdresse(L):
-    res = []
-    for elem in L:
-        res.append(_formater(elem))
-    return res
-"""
+
 
 def makeListeEtudiant(fichier):
     try:
@@ -81,7 +75,6 @@ def makeListeEtudiant(fichier):
         stage = list(map(int,txt['stage']))
         nom = list(txt['Nom E'])
         prenom = list(txt["Prenom E"])
-#        adresse = list(map(_formater,txt['adresseE']))
         adresse = list(txt['Adresse E'])
         ville = list(txt['Ville E'])
         typeClasse = list(txt['TC'])
@@ -147,19 +140,3 @@ def makeStage(*args):
                                 " pour un étudiant nome E,adresse E,TC,stage" + 
                                 " pour un formateur nom F,adresse F,TC,stage ")
     return cP.Stages(lE,lF)
-
-
-if __name__ == '__main__':
-
-#    E = makeListeEtudiant('stage4E.txt')
-#    F = makeListeFormateur('stage4F.txt')
-#    print("etu",E)
-#    print("-"*30)
-#    print("form",F)
-#    print(_formater('(2  1)'))
-#    print(makeStage2('stage4E.txt','stage4F.txt'))
-    print(_formater("savièse"))
-#    test= pd.read_excel('liste adresse.xlsx')
-#    for x in test:
-#        print(x)
-#    print(test['TC'])
