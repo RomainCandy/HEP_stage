@@ -106,7 +106,7 @@ class Etudiant(Personne):
     def distance(self,other):
         try:
             if other.prioritaire:
-                prio = 1000
+                prio = 1000000
             else:
                 prio = 1
         except AttributeError:
