@@ -75,17 +75,16 @@ def makeListeEtudiant(fichier):
         stage = list(map(int,txt['stage']))
         nom = list(txt['Nom E'])
         prenom = list(txt["Prenom E"])
-        adresse = list(txt['Adresse E'])
+#        adresse = list(txt['Adresse E'])
         ville = list(txt['Ville E'])
         typeClasse = list(txt['TC'])
+        permis = list(txt['Permis'])
     except KeyError:
         raise PasAuNormeEtu(fichier)
-    donne = zip(nom,adresse,ville,typeClasse,stage,prenom)
+    donne = zip(nom, ville, typeClasse, stage, prenom, permis)
     res = list()
-    for n,a,v,t,s,p in donne:
-        if str(a) == 'nan':
-            a = ''
-        res.append(cP.Etudiant(n+ ' '+p,a+ ' ' + v,t,s))
+    for n, v, t, s, p, per in donne:
+        res.append(cP.Etudiant(n+ ' '+p, v, t, s, bool(per)))
     return res
 
 def makeListeFormateur(fichier):
@@ -99,12 +98,13 @@ def makeListeFormateur(fichier):
         ville = list(txt['Ville F'])
         typeClasse = list(txt['TC'])
         priorite = list(txt['priorite'])
+        gare = list(txt['Gare'])
     except KeyError:
         raise PasAuNormeForm(fichier)
-    donne = zip(nom,ville,typeClasse,stage,priorite)
+    donne = zip(nom, ville, typeClasse, stage, priorite, gare)
     res = list()
-    for n,v,t,s,p in donne:
-        res.append(cP.Formateur(n,v,t,s,p))
+    for n, v, t, s, p, g in donne:
+        res.append(cP.Formateur(n, v, t, s, p, bool(g)))
     return res
 
 def makeStage2(fichierE, fichierF):

@@ -38,20 +38,23 @@ def emploiDuTemps(LE,LF):
     random.shuffle(LE)
     edt=dict()
     d = 0
+    LFP = [x for x in LF if x.prioritaire == 'oui']
     for Etudiant in LE:
-        if not LF:
+        if not LFP:
 #            edt[Etudiant] = FANTOME
-            return edt, np.Inf
-        LF.sort(key=lambda x:Etudiant.distance(x))
+            LFP = [x for x in LF if x.prioritaire == 'non']
+            if not LFP:
+                return edt, np.Inf
+        LFP.sort(key=lambda x:Etudiant.distance(x))
         i = 0
-        while (LF[i] in Etudiant.getContrainteFormateur() )or (not LF[i].restePlace()):
-            if  len(LF) == i+1:
+        while (LFP[i] in Etudiant.getContrainteFormateur() )or (not LFP[i].restePlace()):
+            if  len(LFP) == i+1:
 #                edt[Etudiant] = FANTOME
                 return edt, np.Inf
             i += 1
-        edt[Etudiant]=LF[i]
-        d = d + Etudiant.distance(LF[i])
-        LF[i].addEtudiant(Etudiant)
+        edt[Etudiant]=LFP[i]
+        d = d + Etudiant.distance(LFP[i])
+        LFP[i].addEtudiant(Etudiant)
     for x in LF:
         x.reset()
     return edt, d
@@ -61,15 +64,27 @@ def edtEfficace(LE,LF):
     LF1 = LF.copy()
     edt = dict()
     d = 0
+    LF1P = [x for x in LF1 if x.prioritaire == 'oui']
     for etu in LE:
-        LFC = list(set(LF1)-set(etu.getContrainteFormateur()))
+        
+        LFCP = list(set(LF1P)-set(etu.getContrainteFormateur()))
         try:
-            res = min(LFC, key= lambda x: etu.distance(x))
-        except IndexError as exc:
-            return edt, np.Inf
+            res = min(LFCP, key = lambda x: etu.distance(x))
+        except ValueError :
+#            return edt, np.Inf
+            LF1P = [x for x in LF1 if x.prioritaire == 'non']
+            LFCR = list(set(LF1P)-set(etu.getContrainteFormateur()))
+            try:
+                res = min(LFCR, key = lambda x: etu.distance(x))
+            except ValueError:
+                return edt, np.Inf
         d += etu.distance(res)
         edt[etu] = res
-        LF1.remove(res)
+        try:
+            LF1P.remove(res)
+        except ValueError:
+            raise ValueError('res = ', res, 'LF1 = ', LF1)
+            
     return edt, d
     
 def edtGreedy(LE,LF,n,variant= 'A'):
@@ -191,7 +206,7 @@ def edtGreedyA(LE,LF,n):
 
 def edtVF(LE,LF,n):
     assert len(LE) <= len(LF)
-    if len(LE) == len(LF):
+    if len(LE) == len(LF)-512:
         print('choixi edtgreedyA ligne 197')
         return edtGreedyA(LE,LF,n)
     else:

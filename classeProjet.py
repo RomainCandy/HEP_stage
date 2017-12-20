@@ -1,4 +1,4 @@
-from emploiDuTemps import edtVF, attributionNormale, emploiDuTemps, separerTC
+from emploiDuTemps import edtVF, attributionNormale, emploiDuTemps, separerTC, edtEfficace
 from emploiDuTemps import np as np
 from emploiDuTemps import random as rd
 from creerBinome import _greedyBinomeR
@@ -37,6 +37,8 @@ class Personne:
                 print(adresseO)
                 print("googleMaps ", self, other,other.adresse)
                 res= 1000000*(self.typeClasse != other.typeClasse) + distanceAdresse(adresse , adresseO )*(99*(self.typeClasse != other.typeClasse)+1)
+                if (type(other) is Formateur or type(self) is Formateur) and self.adresse.strip().lower() == other.adresse.strip().lower():
+                    res = np.Inf
                 self.getDistance[other.adresse] = res
                 other.getDistance[self.adresse] = res
             except KeyError:
@@ -104,26 +106,19 @@ class Etudiant(Personne):
         return self.binome
     
     def distance(self,other):
-        try:
-            if other.prioritaire:
-                prio = 1000000
-            else:
-                prio = 1
-        except AttributeError:
-            prio = 1
                 
         if not (self.permis):
             try:
                 if not other.gare:
-                    return (100*Personne.distance(self,other)+1000000)/prio
+                    return (100*Personne.distance(self,other)+1000000)
             except AttributeError:
                 pass
             try:
                 if not other.permis:
-                    return  (100*Personne.distance(self,other))/prio
+                    return  (100*Personne.distance(self,other))
             except AttributeError:
-                return Personne.distance(self,other)/prio
-        return Personne.distance(self,other)/prio
+                return Personne.distance(self,other)
+        return Personne.distance(self,other)
     
     def getContrainteFormateur(self):
         return self.dejaFormateur
@@ -252,7 +247,7 @@ class Stages:
     def getListeFormStage(self,i):
         return [form for form in self.getListeFormateurs() if form.numStage == i]
     
-    def attributionStage(self,numStage,nbIter=10000):
+    def attributionStage(self,numStage,nbIter=100000):
         """ quels sont les stages où ils doivent être tout seul?
         """
         
@@ -268,7 +263,7 @@ class Stages:
             if len(LEelem) <= len(LFelem) and len(LEmoyen)<= len(LFmoyen):
                 self.attribution[numStage], distanceOptiElem = edtVF(LEelem,LFelem,nbIter)
                 attributionMoyen,distanceOptiMoyen = edtVF(LEmoyen,LFmoyen,nbIter)
-                self.distanceOpti = distanceOptiElem+ distanceOptiMoyen
+                self.distanceOpti = distanceOptiElem + distanceOptiMoyen
                 self.attribution[numStage].update(attributionMoyen)
             else:
                 self.attribution[numStage], self.distanceOpti= edtVF(LE,LF,nbIter)
@@ -334,7 +329,8 @@ def _nouvelleVersionR(LE,LF):
     try:
         NLE, distance = _greedyBinomeR(LE, variant='G')
         DNLE = creerDoubleEtudiant(NLE)
-        edtTemp, distEdt = emploiDuTemps(DNLE, LF)
+#        edtTemp, distEdt = emploiDuTemps(DNLE, LF)
+        edtTemp, distEdt = edtEfficace(DNLE, LF)
     except AttributeError as exc:
         """moche mais pour gerer les erreurs liées au fait qu'on ne trouve pas d'attribution..."""
         raise UnboundLocalError(exc.args)
@@ -358,9 +354,11 @@ def nouvelleVersion(LE,LF, nbIter):
 FANTOME = Formateur('Fantome','paris','elem',1,'oui')
 
 if __name__ == '__main__':
-    etu = Etudiant('E1','los angeles','elem',1)
+    etu = Etudiant('E1','martigny','elem',1)
+    etu2 = Etudiant('E2', 'conthey', 'elem',1)
     form = Formateur('F1','martigny','elem',1)
-    print(etu.distance(form))
+    detu = DoubleEtudiant(etu, etu2)
+    print(detu.distance(form))
 
         
         
