@@ -4,18 +4,70 @@ from emploiDuTemps import random as rd
 from creerBinome import _greedyBinomeR
 from getDistances import distanceAdresse
 import unidecode
+import shelve
 
 
 
 def formater(s):
     res = unidecode.unidecode(s)
-    res = res.replace(' ','+')
+#    res = res.replace(' ','+')
     res = res.replace(' ','+')+'+suisse'
     return res
 
+class Distance:
+    
+    def __init__(self, precompute_distance: str):
+        print('im a new instance')
+        self.precompute_distance = precompute_distance
+        with shelve.open(precompute_distance) as db:
+            try:
+                self.all_distances = db['distance']
+            except KeyError:
+                self.all_distances = dict()
+        self.changes = False
+        
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.save()
+            
+    def get_distance(self, ville1, ville2):
+        try:
+            return self.all_distances[(ville1, ville2)]
+        except KeyError:
+            try:
+                adresseO = formater(ville1)
+                adresse = formater(ville2)
+                dist = distanceAdresse(adresse , adresseO)
+                self.all_distances[(ville1, ville2)] = dist
+                self.all_distances[(ville2, ville1)] = dist
+                self.changes = True
+                print('im growing')
+                return dist
+            except KeyError as err:
+                raise AttributeError("l'adresse {} ou "
+                                     "l'adresse {} a un probleme."
+                                     "Impossible de calculer "
+                                     "la durée du trajet.".format(ville1,
+                                                                 ville2))
+    def dummy(self, ville1, ville2):
+        try:
+            return self.all_distances[(ville1, ville2)]
+        except KeyError:
+            print('im growing')
+            self.changes = True
+            self.all_distances[(ville1, ville2)] = (ville1, ville2)
+            return (ville1, ville2)
+            
+    def save(self):
+        if self.changes:
+            with shelve.open(self.precompute_distance) as db:
+                db['distance'] = self.all_distances
+        
 class Personne:
     
-    def __init__(self, name,adresse,typeClasse,numStage):
+    def __init__(self, name, adresse, typeClasse, numStage):
         assert numStage in list(range(7))
         # pour l'instant adresse est un np.array représentant les coordonnées
         assert typeClasse in ['elem', 'moyen']
