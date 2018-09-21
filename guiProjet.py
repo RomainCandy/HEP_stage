@@ -492,7 +492,7 @@ class FenetreStage(tk.Toplevel):
                     self.bListeA.insert(tk.END, '-'*50)
                 else:
                     self.bListeA.insert(tk.END, str(etu.name) + " va avec " + str(self.attributionFinale[etu].name))
-            print(self.stage.distanceOpti)
+            print('somme temps: ', self.stage.distanceOpti)
             self.changement = False
             self.root.tempTout =self.stage
             for x in self.LE:

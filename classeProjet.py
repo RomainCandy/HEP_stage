@@ -15,23 +15,25 @@ def formater(s):
     return res
 
 class Distance:
-    
+
     def __init__(self, precompute_distance: str):
-        print('im a new instance')
         self.precompute_distance = precompute_distance
         with shelve.open(precompute_distance) as db:
             try:
                 self.all_distances = db['distance']
+                self.villes = set((x for x, _ in self.all_distances))
             except KeyError:
                 self.all_distances = dict()
-        self.changes = False
-        
+                db['distance'] = dict()
+                self.villes = set()
+        self.changes = True
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         self.save()
-            
+
     def get_distance(self, ville1, ville2):
         try:
             return self.all_distances[(ville1, ville2)]
@@ -43,64 +45,78 @@ class Distance:
                 self.all_distances[(ville1, ville2)] = dist
                 self.all_distances[(ville2, ville1)] = dist
                 self.changes = True
-                print('im growing')
                 return dist
-            except KeyError as err:
+            except KeyError:
                 raise AttributeError("l'adresse {} ou "
                                      "l'adresse {} a un probleme."
                                      "Impossible de calculer "
-                                     "la durée du trajet.".format(ville1,
+                                     "la durÃ©e du trajet.".format(ville1,
                                                                  ville2))
-    def dummy(self, ville1, ville2):
-        try:
-            return self.all_distances[(ville1, ville2)]
-        except KeyError:
-            print('im growing')
-            self.changes = True
-            self.all_distances[(ville1, ville2)] = (ville1, ville2)
-            return (ville1, ville2)
-            
+
+    def add_distance(self, ville1, ville2, d):
+        self.changes = True
+        self.all_distances[(ville1, ville2)] = d
+        self.all_distances[(ville2, ville1)] = d
+
+    def add_ville(self, ville):
+        self.changes = True
+        if ville not in self.villes:
+            for v in self.villes:
+                d = float(input('distance beetween '
+                                '{} and {}: '.format(v, ville)))
+                self.add_distance(ville, v, d)
+        self.villes.add(ville)
+
+    def add_everything(self, all_villes):
+        for ville in all_villes:
+            self.add_ville(ville)
+
     def save(self):
         if self.changes:
             with shelve.open(self.precompute_distance) as db:
                 db['distance'] = self.all_distances
-        
+
+Dist = Distance('distance/test_dist_stages')
+D = Dist.all_distances
+
 class Personne:
     
-    def __init__(self, name, adresse, typeClasse, numStage):
+    def __init__(self, name, adresse, typeClasse, numStage, corresp = 'distance/correspondance'):
         assert numStage in list(range(7))
+        global D
         # pour l'instant adresse est un np.array représentant les coordonnées
         assert typeClasse in ['elem', 'moyen']
-        self.name=name
-        self.adresse=adresse
+        self.name = name
+        self.adresse = adresse
         self.typeClasse = typeClasse
-        self.numStage = numStage 
-        self.getDistance = dict()
-    
-    def distance(self,other):
-        """ calcul la distance entre deux personnes"""
-        try:
-            return self.getDistance[other.adresse]
-        except KeyError:
-            try:
-                adresseO = formater(other.adresse)
-                adresse = formater(self.adresse)
-                print(adresse)
-                print(adresseO)
-                print("googleMaps ", self, other,other.adresse)
-                res= 1000000*(self.typeClasse != other.typeClasse) + distanceAdresse(adresse , adresseO )*(99*(self.typeClasse != other.typeClasse)+1)
-                if (type(other) is Formateur or type(self) is Formateur) and self.adresse.strip().lower() == other.adresse.strip().lower():
-                    res = np.Inf
-                self.getDistance[other.adresse] = res
-                other.getDistance[self.adresse] = res
-            except KeyError:
-                raise AttributeError("l'adresse %s de %s ou l'adresse %s de %s a un probleme. Impossible de calculer la durée du trajet"
-                                     %(self.adresse,self.name,other.adresse,other.name))
-            return res
-        
+        self.numStage = numStage
+        if corresp != None:
+            with shelve.open(corresp) as db:
+                temp = db['corresp']
+                if adresse in temp:
+                    self.adresse = temp[adresse]
+
+    def distance(self, other):
+       """ calcul la distance entre deux personnes """
+       if self.typeClasse != other.typeClasse:
+           return np.Inf
+       if (type(other) is Formateur or type(self) is Formateur) and self.adresse.strip().lower() == other.adresse.strip().lower():
+           return np.Inf
+       if type(other) == type(self) == Etudiant and self.adresse.strip().lower() == other.adresse.strip().lower():
+           return 0
+       try:
+           return D[(self.adresse, other.adresse)]
+       except KeyError:
+            raise AttributeError("la distance entre {} ({}) et {} ({})"
+                                 "n'est pas rentrée dans la matrice".format(
+                                         self.adresse,
+                                         self.name,
+                                         other.adresse,
+                                         other.name))
+               
     def changerAdresse(self,nAdresse):
         self.adresse = nAdresse
-        self.getDistance = dict()
+#        self.getDistance = dict()
     
     def __str__(self):
         return self.name
@@ -116,8 +132,8 @@ class Personne:
         
 class Etudiant(Personne):
     
-    def __init__(self,name,adresse,typeClasse,numStage,permis=True):
-        Personne.__init__(self,name,adresse,typeClasse,numStage)
+    def __init__(self, name, adresse, typeClasse, numStage, permis=True):
+        Personne.__init__(self, name, adresse, typeClasse, numStage)
         self.dejaFormateur=[]
         self.binome = []
         self.permis=permis
@@ -157,40 +173,41 @@ class Etudiant(Personne):
     def getBinome(self):
         return self.binome
     
-    def distance(self,other):
+    def distance(self, other):
                 
-        if not (self.permis):
+        if not self.permis:
             try:
                 if not other.gare:
-                    return (100*Personne.distance(self,other)+1000000)
+                    return np.Inf
+#                    return (100*Personne.distance(self, other)+1000000)
             except AttributeError:
                 pass
             try:
                 if not other.permis:
-                    return  (100*Personne.distance(self,other))
+                    return  (100*Personne.distance(self, other))
             except AttributeError:
-                return Personne.distance(self,other)
-        return Personne.distance(self,other)
+                return Personne.distance(self, other)
+        return Personne.distance(self, other)
     
     def getContrainteFormateur(self):
         return self.dejaFormateur
     
-    def pasPossible(self,other):
+    def pasPossible(self, other):
         return other in self.getBinome()
     
     def changerPermis(self):
         self.permis = not(self.permis)
-        self.getDistance = dict()
+#        self.getDistance = dict()
     
 
 class DoubleEtudiant:    
-    def __init__(self,etu1,etu2):
+    def __init__(self,etu1 , etu2):
         self.name = str(etu1.name) + ' -_- ' +  str(etu2.name)
-        self.id = (etu1,etu2)
+        self.id = (etu1, etu2)
         self.dejaFormateur = list(set(etu1.getContrainteFormateur())|set(etu2.getContrainteFormateur()))
     
-    def distance(self,other):
-        return (self.id[0].distance(other)+self.id[1].distance(other))
+    def distance(self, other):
+        return (self.id[0].distance(other) + self.id[1].distance(other))
     
     def getContrainteFormateur(self):
         return self.dejaFormateur
@@ -203,9 +220,11 @@ class DoubleEtudiant:
 
 class Formateur(Personne):
     
-    def __init__(self,name,adresse,typeClasse,numStage,prioritaire='non',gare=True):
-        Personne.__init__(self,name,adresse,typeClasse,numStage)
+    def __init__(self, name, adresse, typeClasse, numStage, prioritaire='non', 
+                 gare=True):
+        Personne.__init__(self, name, adresse, typeClasse, numStage)
         """ si le nb d'étudiant que peut accueillir un formateur peut varier le dire huhu"""
+        prioritaire = prioritaire.strip()
         assert prioritaire in ['oui', 'non']
         self.nbEtumax = 1
         self.etudiantEnFormation = []
@@ -225,14 +244,14 @@ class Formateur(Personne):
     
     def changerGare(self):
         self.gare = not(self.gare)
-        self.getDistance = dict()
+#        self.getDistance = dict()
     
     def changerPrio(self):
         if self.prioritaire == 'oui':
             self.prioritaire = 'non'
         else:
             self.prioritaire = 'oui'
-        self.getDistance = dict()
+#        self.getDistance = dict()
     
     def getStage(self):
         return self.numStage
@@ -242,7 +261,7 @@ class Formateur(Personne):
     
 class Stages:
     """ si on met le defaut à [] prend toute les instances avec défaut comme etant les même"""
-    def __init__(self,lEtudiants=[],lFormateurs=[], version= 0):
+    def __init__(self, lEtudiants=None, lFormateurs=None, version=0):
 #        assert numeroStage in list(range(1,7))
         self.lEtudiants = lEtudiants
         self.lFormateurs = lFormateurs
@@ -250,13 +269,13 @@ class Stages:
         self.attribution = {i:[] for i in range(1,7)}
         
         
-    def ajoutListeEtu(self,lE):
+    def ajoutListeEtu(self, lE):
         if self.lEtudiants is None:
             self.lEtudiants = lE
         for etu in lE:
             self.ajoutEtudiant(etu)
             
-    def ajoutListeForm(self,lF):
+    def ajoutListeForm(self, lF):
         if self.lFormateurs is None:
             self.lFormateurs = lF
         for form in lF:
@@ -265,7 +284,7 @@ class Stages:
     def changerVersion(self):
         self.version = not self.version
     
-    def ajoutEtudiant(self,etu):
+    def ajoutEtudiant(self, etu):
         if etu:
             if self.lEtudiants is None:
                 self.lEtudiants = [etu]
@@ -293,18 +312,18 @@ class Stages:
     def getListeFormateurs(self):
         return self.lFormateurs
     
-    def getListeEtuStage(self,i):
+    def getListeEtuStage(self, i):
         return [etu for etu in self.getListeEtudiants() if etu.numStage == i]
     
-    def getListeFormStage(self,i):
+    def getListeFormStage(self, i):
         return [form for form in self.getListeFormateurs() if form.numStage == i]
     
-    def attributionStage(self,numStage,nbIter=100000):
+    def attributionStage(self, numStage, nbIter=100000):
         """ quels sont les stages où ils doivent être tout seul?
         """
         
-        LE=self.getListeEtuStage(numStage)
-        LF=self.getListeFormStage(numStage)
+        LE = self.getListeEtuStage(numStage)
+        LF = self.getListeFormStage(numStage)
         sepLE = separerTC(LE)
         LEelem = sepLE['elem']
         LEmoyen = sepLE['moyen']
@@ -339,16 +358,16 @@ class Stages:
             raise UnboundLocalError('aucune attribution trouvée')
         return self.attribution[numStage]
     
-    def update(self,numStage):
+    def update(self, numStage):
         assert self.attribution
         for etu, form in self.attribution[numStage].items():
             etu.addContrainteFormateur(form)
-            if etu.numStage in list(range(1,5)):
+            if etu.numStage in list(range(1, 5)):
                 for etu2,form2 in self.attribution[numStage].items():
                     if etu != etu2 and form == form2:
                         etu.addBinome(etu2)
                         
-    def changerAttribution(self,etu1,etu2):
+    def changerAttribution(self, etu1, etu2):
         assert etu1 in self.getListeEtudiants() and etu2 in self.getListeEtudiants() and etu1.numStage == etu2.numStage
         self.attribution[etu1],self.attribution[etu2] = self.attribution[etu2],self.attribution[etu1]
     
@@ -371,10 +390,10 @@ def creerDoubleEtudiant(LB):
     res = []
     for binome in LB:
         try:
-            res.append(DoubleEtudiant(binome[0],binome[1]))
+            res.append(DoubleEtudiant(binome[0], binome[1]))
         except IndexError:
             
-            res.append(DoubleEtudiant(binome[0],binome[0]))
+            res.append(DoubleEtudiant(binome[0], binome[0]))
     return res
             
 def _nouvelleVersionR(LE,LF):
@@ -396,21 +415,22 @@ def nouvelleVersion(LE,LF, nbIter):
             print((i*100)/nbIter,'%')
         for x in LF:
             x.reset()
-        etd, distance = _nouvelleVersionR(LE,LF)
+        etd, distance = _nouvelleVersionR(LE, LF)
         if distance < best:
             best = distance
             edtF = etd
-    return attributionNormale((edtF,distance))
+    return attributionNormale((edtF, best))
 
 
-FANTOME = Formateur('Fantome','paris','elem',1,'oui')
+#FANTOME = Formateur('Fantome','paris','elem',1,'oui')
 
 if __name__ == '__main__':
-    etu = Etudiant('E1','martigny','elem',1)
-    etu2 = Etudiant('E2', 'conthey', 'elem',1)
-    form = Formateur('F1','martigny','elem',1)
-    detu = DoubleEtudiant(etu, etu2)
-    print(detu.distance(form))
+    pass
+#    etu = Etudiant('E1','martigny','elem',1)
+#    etu2 = Etudiant('E2', 'conthey', 'elem',1)
+#    form = Formateur('F1','martigny','elem',1)
+#    detu = DoubleEtudiant(etu, etu2)
+#    print(detu.distance(form))
 
         
         
