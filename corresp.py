@@ -9,6 +9,7 @@ Created on Fri Sep 21 17:09:38 2018
 import xlrd
 import shelve
 
+
 def get_corresp(path='listedesvilles.xlsx'):
     """
     Open and read an Excel file
@@ -30,5 +31,6 @@ def get_corresp(path='listedesvilles.xlsx'):
         i += 1
     with shelve.open('correspondance') as db:
         db['corresp'] = res
-    
+
+
 get_corresp()

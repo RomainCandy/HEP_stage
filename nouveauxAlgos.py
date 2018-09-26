@@ -10,50 +10,50 @@ Created on Mon Aug 28 12:06:40 2017
 from classeProjet import rd as rd
 from emploiDuTemps import emploiDuTemps
 
-def diviser(L,d):
-    L1 = rd.sample(L,d)
+
+def diviser(L, d):
+    L1 = rd.sample(L, d)
     L2 = [x for x in L if x not in L1]
     rd.shuffle(L2)
     return L1, L2
 
+
 def _autreVersionR(LE, LF):
-    LE1, LE2= diviser(LE,(len(LE)+1)//2)
-    edt, d = emploiDuTemps(LE1,LF)
+    LE1, LE2 = diviser(LE, (len(LE)+1)//2)
+    edt, d = emploiDuTemps(LE1, LF)
     LF1 = [x for x in edt.values()]
     for x in LF1:
         x.reset()
-    edt2, d2 = emploiDuTemps(LE2,LF1)
+    edt2, d2 = emploiDuTemps(LE2, LF1)
     edt.update(edt2)
     for x in LF1:
         x.reset()
     return edt, d+d2
+
 
 def _autreVersionRA(LE, LF):
-    LE1, LE2= diviser(LE,(len(LE)+1)//2)
-    edt, d = edtEfficace(LE1,LF)
+    LE1, LE2 = diviser(LE, (len(LE)+1)//2)
+    edt, d = edtEfficace(LE1, LF)
     LF1 = [x for x in edt.values()]
-    edt2, d2 = edtEfficace(LE2,LF1)
+    edt2, d2 = edtEfficace(LE2, LF1)
     edt.update(edt2)
     return edt, d+d2
 
 
-def edtEfficace(LE,LF):
+def edtEfficace(LE, LF):
     rd.shuffle(LE)
     dejaVu = []
     edt = dict()
     d = 0
     for etu in LE:
-        LFC = list(set(LF)-set(dejaVu+etu.getContrainteFormateur()))
+        LFC = list(set(LF) - set(dejaVu+etu.getContrainteFormateur()))
         try:
-            res = min(LFC, key= lambda x: etu.distance(x))
+            res = min(LFC, key=lambda x: etu.distance(x))
         except ValueError:
             return edt, 1000000000
         d += etu.distance(res)
         edt[etu] = res
     return edt, d
-
-
-
 
 
 def autreVersion(LE, LF, nbIter):
@@ -65,6 +65,7 @@ def autreVersion(LE, LF, nbIter):
             edtF = edt
             best = distance
     return edtF, best
+
 
 def autreVersionA(LE, LF, nbIter):
     rd.shuffle(LE)
